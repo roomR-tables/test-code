@@ -10,8 +10,8 @@
 #define dirPin3 10
 #define stepPin3 11
 
-int minMicrosDelay = 2000;
-int maxMicrosDelay = 600;
+int minMicrosDelay = 1600;
+int maxMicrosDelay = 800;
 
 void setup() {
   Serial.begin(9600);
@@ -37,6 +37,7 @@ void loop() {
     Serial.println("> '" + String(in) + "'");
     moveDir(in, 500);
   }
+  delay(100);
 }
 
 void changeDir(int whichMotor, int dir) {
@@ -84,8 +85,8 @@ void stepMotor(int delayM) {
 void takeSteps(int steps) {
   // Enables the motor to move in a particular direction
   // Makes 200 pulses one full cycle rotation
-  int tenPercent = steps * 0.1;
-  int ninetyPercent = steps * 0.9;
+  int tenPercent = steps * 0.2;
+  int ninetyPercent = steps * 0.8;
   
   for (int i = 0; i < steps; i++) {
     if(i < tenPercent) {
@@ -105,38 +106,60 @@ void moveDir(char whichDir, int steps){
   switch(whichDir){
     case 'f':
       Serial.println("Moving 'f'orward");
-      //move 'f'orward
-      changeDir(4, CLOCKWISE);
+      changeDir(0, CLOCKWISE);
+      changeDir(1, ANTICLOCKWISE);
+      changeDir(2, CLOCKWISE);
+      changeDir(3, ANTICLOCKWISE);
       takeSteps(steps);
     break;
     
     case 'b':
       Serial.println("Moving 'b'orward");
       //move 'b'orward
-      changeDir(4, ANTICLOCKWISE);
+      changeDir(0, ANTICLOCKWISE);
+      changeDir(1, CLOCKWISE);
+      changeDir(2, ANTICLOCKWISE);
+      changeDir(3, CLOCKWISE);
       takeSteps(steps);
     break;
     
     case 'r':
       Serial.println("Moving 'r'orward");
       //move 'r'orward
-      changeDir(0, ANTICLOCKWISE);
+
+      changeDir(0, CLOCKWISE);
       changeDir(1, CLOCKWISE);
-      changeDir(2, CLOCKWISE);
+      changeDir(2, ANTICLOCKWISE);
       changeDir(3, ANTICLOCKWISE);
+      
       takeSteps(steps);
     break;
     
     case 'l':
       Serial.println("Moving 'l'orward");
       //move 'l'orward
-      changeDir(0, CLOCKWISE);
+
+      changeDir(0, ANTICLOCKWISE);
       changeDir(1, ANTICLOCKWISE);
-      changeDir(2, ANTICLOCKWISE);
+      changeDir(2, CLOCKWISE);
       changeDir(3, CLOCKWISE);
+      
       takeSteps(steps);
     break;
-    
+    case 'e':
+      Serial.println("Rotating rorward (e)");
+
+      changeDir(4, ANTICLOCKWISE);
+      
+      takeSteps(steps);
+    break;
+    case 'q':
+      Serial.println("Rotatling lorward (q)");
+
+      changeDir(4, CLOCKWISE);
+      
+      takeSteps(steps);
+    break;
     default:
       Serial.println("Watchu mean");
     break;
