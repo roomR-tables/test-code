@@ -1,20 +1,41 @@
+#include <SPI.h>
+#include "src/Nrf/Nrf.h"
+
+#define forwardMulti 10
+#define borwardMulti 10
+#define lorwardMulti 10
+#define rorwardMulti 10
+
 #define dirPin0 2 //Pin which toggles the direction
 #define stepPin0 3 //Pin that sends the step pulse
 
-#define dirPin1 4
-#define stepPin1 5
+#define dirPin1 4 // 4
+#define stepPin1 5 // 5
 
-#define dirPin2 6
-#define stepPin2 9
+#define dirPin2 6 // 6
+#define stepPin2 9 // 9
 
-#define dirPin3 10
-#define stepPin3 11
+#define dirPin3 10 // 10
+#define stepPin3 2 // 11
 
 int minMicrosDelay = 1600;
 int maxMicrosDelay = 800;
 
+const byte address[][12] = {"arduino_read", "pi_read"};
+//const byte address[][6] = {"00006", "00008"};
+
+RF24 rfradio(7, 8);
+Nrf nrf(&rfradio);
+
 void setup() {
   Serial.begin(9600);
+  nrf.radio->begin();
+  nrf.radio->enableDynamicPayloads();
+
+  // Do not use 0 as reading pipe! This pipe is already in use ase writing pipe
+  nrf.radio->openWritingPipe(address[1]);
+  nrf.radio->openReadingPipe(1, address[0]);
+  nrf.radio->startListening();
   Serial.println("Started");
 
   pinMode(dirPin0, OUTPUT);
@@ -32,12 +53,37 @@ void setup() {
 
 void loop() {
   //read serial, x = stop, s = start.
-  if (Serial.available() > 0) {
-    char in = Serial.read();
-    Serial.println("> '" + String(in) + "'");
-    moveDir(in, 500);
-  }
+//  if (Serial.available() > 0) {
+//    char in = Serial.read();
+//    Serial.println("> '" + String(in) + "'");
+//    moveDir(in, 500);
+//  }
+  char message[32] = "";
+    nrf.readMessage(message, nrf.radio->getDynamicPayloadSize());
+    if (strlen(message) != 0)
+    {
+      Serial.println(message);
+      char dir = getDirection(message);
+      int distance = getDistance(message);
+      moveDir(dir, distance);
+    }
   delay(100);
+}
+
+char getDirection(char input[]){
+  return input[0];
+}
+
+long getDistance(char input[]){
+  String output = "";
+  for(int i = 1; i < 32; i++){
+    if(isdigit(input[i])){
+      output += input[i];
+    }else{
+      break;
+    }
+  }
+  return output.toInt();
 }
 
 void changeDir(int whichMotor, int dir) {
@@ -82,13 +128,17 @@ void stepMotor(int delayM) {
 }
 
 //rotate/move  a certain amount of steps.
-void takeSteps(int steps) {
+void takeSteps(int distance, int multiplier) {
+  int steps = distance * multiplier;
   // Enables the motor to move in a particular direction
   // Makes 200 pulses one full cycle rotation
   int tenPercent = steps * 0.2;
   int ninetyPercent = steps * 0.8;
   
   for (int i = 0; i < steps; i++) {
+    //Update the control center
+    
+    //
     if(i < tenPercent) {
       stepMotor(map(i, 0, tenPercent, minMicrosDelay, maxMicrosDelay));
     } else if(i > ninetyPercent){
@@ -97,6 +147,9 @@ void takeSteps(int steps) {
       stepMotor(maxMicrosDelay);  
     }
   }
+  char doneMessage[4] = "Done";
+  Serial.println("Done");
+  nrf.sendMessage(doneMessage, 4);
 }
 
 #define CLOCKWISE HIGH
@@ -104,26 +157,26 @@ void takeSteps(int steps) {
 
 void moveDir(char whichDir, int steps){
   switch(whichDir){
-    case 'f':
+    case 'F':
       Serial.println("Moving 'f'orward");
       changeDir(0, CLOCKWISE);
       changeDir(1, ANTICLOCKWISE);
       changeDir(2, CLOCKWISE);
       changeDir(3, ANTICLOCKWISE);
-      takeSteps(steps);
+      takeSteps(steps, forwardMulti);
     break;
     
-    case 'b':
+    case 'B':
       Serial.println("Moving 'b'orward");
       //move 'b'orward
       changeDir(0, ANTICLOCKWISE);
       changeDir(1, CLOCKWISE);
       changeDir(2, ANTICLOCKWISE);
       changeDir(3, CLOCKWISE);
-      takeSteps(steps);
+      takeSteps(steps, borwardMulti);
     break;
     
-    case 'r':
+    case 'R':
       Serial.println("Moving 'r'orward");
       //move 'r'orward
 
@@ -132,10 +185,10 @@ void moveDir(char whichDir, int steps){
       changeDir(2, ANTICLOCKWISE);
       changeDir(3, ANTICLOCKWISE);
       
-      takeSteps(steps);
+      takeSteps(steps, rorwardMulti);
     break;
     
-    case 'l':
+    case 'L':
       Serial.println("Moving 'l'orward");
       //move 'l'orward
 
@@ -144,22 +197,22 @@ void moveDir(char whichDir, int steps){
       changeDir(2, CLOCKWISE);
       changeDir(3, CLOCKWISE);
       
-      takeSteps(steps);
+      takeSteps(steps, lorwardMulti);
     break;
-    case 'e':
-      Serial.println("Rotating rorward (e)");
-
-      changeDir(4, ANTICLOCKWISE);
-      
-      takeSteps(steps);
-    break;
-    case 'q':
-      Serial.println("Rotatling lorward (q)");
-
-      changeDir(4, CLOCKWISE);
-      
-      takeSteps(steps);
-    break;
+//    case 'e':
+//      Serial.println("Rotating rorward (e)");
+//
+//      changeDir(4, ANTICLOCKWISE);
+//      
+//      takeSteps(steps);
+//    break;
+//    case 'q':
+//      Serial.println("Rotatling lorward (q)");
+//
+//      changeDir(4, CLOCKWISE);
+//      
+//      takeSteps(steps);
+//    break;
     default:
       Serial.println("Watchu mean");
     break;
