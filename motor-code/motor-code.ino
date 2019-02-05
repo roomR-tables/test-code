@@ -16,12 +16,13 @@
 #define stepPin2 9 // 9
 
 #define dirPin3 10 // 10
-#define stepPin3 2 // 11
+#define stepPin3 11 // 11
 
 int minMicrosDelay = 1600;
 int maxMicrosDelay = 800;
 
-const byte address[][12] = {"arduino_read", "pi_read"};
+//const byte address[][12] = {"arduino_read", "pi_read"};
+const byte address[][6] = {"00001", "00002"};
 //const byte address[][6] = {"00006", "00008"};
 
 RF24 rfradio(7, 8);
@@ -30,6 +31,7 @@ Nrf nrf(&rfradio);
 void setup() {
   Serial.begin(9600);
   nrf.radio->begin();
+  nrf.radio->setRetries(5,15);
   nrf.radio->enableDynamicPayloads();
 
   // Do not use 0 as reading pipe! This pipe is already in use ase writing pipe
@@ -147,9 +149,15 @@ void takeSteps(int distance, int multiplier) {
       stepMotor(maxMicrosDelay);  
     }
   }
-  char doneMessage[4] = "Done";
+  delay(100);
+  char doneMessage[32] = "Done";
   Serial.println("Done");
-  nrf.sendMessage(doneMessage, 4);
+   bool ok = nrf.sendMessage(doneMessage, (sizeof(doneMessage)/sizeof(char)));
+   while (!ok){
+    ok = nrf.sendMessage(doneMessage, (sizeof(doneMessage)/sizeof(char)));
+    Serial.println("Sending Done");
+    delay(500);
+   }
 }
 
 #define CLOCKWISE HIGH
