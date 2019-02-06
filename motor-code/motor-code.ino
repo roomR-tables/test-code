@@ -1,10 +1,10 @@
 #include <SPI.h>
 #include "src/Nrf/Nrf.h"
 
-#define forwardMulti 10
-#define borwardMulti 10
-#define lorwardMulti 10
-#define rorwardMulti 10
+#define forwardMulti 11
+#define borwardMulti 11
+#define lorwardMulti 15
+#define rorwardMulti 15
 
 #define dirPin0 2 //Pin which toggles the direction
 #define stepPin0 3 //Pin that sends the step pulse
